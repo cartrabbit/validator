@@ -1,0 +1,21 @@
+{	
+	"name": "cartrabbit/validator",
+    	"description": "Do validation with Cartrabbit",
+	"type": "library",
+    	"license": "MIT",
+	"authors": [
+		    {
+		      "name":     "Ashlin Rejo"
+		    }
+		],
+	"require": {
+		"php": ">=5.3.0"
+	    },
+	"require-dev": {
+	},
+	"autoload": {
+		"psr-4": {
+			"Cartrabbit\\Validator\\": "src/"
+			}
+		}
+}

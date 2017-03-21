@@ -1,4 +1,4 @@
-# Cartrabbit Validator for Herbert
+# Cartrabbit Validator for Cartrabbit
 
 Add the below piece of code in **cartrabbit.config.php** to load Cartrabbit Validation service provider
 
