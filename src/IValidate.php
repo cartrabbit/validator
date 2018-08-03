@@ -12,7 +12,7 @@ interface IValidate
      *
      * @return mixed
      */
-    public function single($data, array $rules);
+    public function single($data, array $rules, array $error_message);
 
     /**
      * Validate multiple inputs.
@@ -22,7 +22,7 @@ interface IValidate
      *
      * @return array
      */
-    public function multiple(array $data, array $rules);
+    public function multiple(array $data, array $rules, array $error_message);
 
     /**
      * Check if a given array is associative.

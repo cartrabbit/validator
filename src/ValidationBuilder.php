@@ -14,27 +14,35 @@ class ValidationBuilder implements IValidate
      *
      * @return mixed
      */
-    public function single($data, array $rules)
+    public function single($data, array $rules , array $error_message)
     {
+
         foreach ($rules as $rule) {
+            if(isset($data['error'])){
+                continue;
+            }
             // Parse $rule and check for attributes.
             $ruleProperties = $this->parseRule($rule);
 
             // Set rule method.
             $signature = 'validate_'.$ruleProperties['rule'];
-
+            $message = '';
+            if(isset($error_message[$ruleProperties['rule']])){
+                $message = $error_message[$ruleProperties['rule']];
+            }
             // Check if the datas given is an array
             // If array, parse each item and return them
+
             // into the array.
             if (is_array($data)) {
                 // Overwrite each array value
                 foreach ($data as $key => $value) {
                     // Validate the data value.
-                    $data[$key] = $this->$signature($value, $ruleProperties['attributes']);
+                    $data[$key] = $this->$signature($value, $ruleProperties['attributes'],$message);
                 }
             } else {
                 // The data is a string or single value.
-                $data = $this->$signature($data, $ruleProperties['attributes']);
+                $data = $this->$signature($data, $ruleProperties['attributes'],$message);
             }
         }
 
@@ -49,14 +57,17 @@ class ValidationBuilder implements IValidate
      *
      * @return array
      */
-    public function multiple(array $data, array $rules)
+    public function multiple(array $data, array $rules, array $error_message)
     {
         $validates = [];
 
         foreach ($rules as $field => $fieldRules) {
             $input = array_get($data, $field);
-
-            $validates[$field] = $this->single($input, $fieldRules);
+            $message = array();
+            if(isset($error_message[$field])){
+                $message = $error_message[$field];
+            }
+            $validates[$field] = $this->single($input, $fieldRules,$message);
         }
 
         return $validates;
@@ -132,6 +143,7 @@ class ValidationBuilder implements IValidate
         return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
+
     /**
      * Validate a value with only alphabetic characters.
      *
@@ -140,9 +152,9 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_alpha($data, array $attributes = [])
+    protected function validate_alpha($data, array $attributes = [],$message ='Field must be alphabetic characters')
     {
-        return ctype_alpha($data) ? $data : '';
+        return ctype_alpha($data) ? $data : array('error'  => $message);
     }
 
     /**
@@ -153,9 +165,23 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_num($data, array $attributes = [])
+    protected function validate_num($data, array $attributes = [],$message = 'Field must be numeric characters')
     {
-        return ctype_digit($data) ? $data : '';
+        return ctype_digit($data) ? $data : array('error'  => $message);
+    }
+
+    /**
+     * Validate a value with only float characters.
+     *
+     * @param string $data       The data to validate.
+     * @param array  $attributes
+     *
+     * @return string
+     */
+    protected function validate_numeric($data, array $attributes = [],$message = 'Field must be numeric characters')
+    {
+
+        return is_numeric($data) ? $data : array('error'  => $message);
     }
 
     /**
@@ -166,11 +192,11 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_negnum($data, array $attributes = [])
+    protected function validate_negnum($data, array $attributes = [],$message = 'Field can be negative full number')
     {
         $data = (int) $data;
 
-        return (0 > $data) ? (string) $data : '';
+        return (0 > $data) ? (string) $data : array('error' => $message);
     }
 
     /**
@@ -181,49 +207,24 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_alnum($data, array $attributes = [])
+    protected function validate_alnum($data, array $attributes = [],$message = 'Field must be alphanumeric characters')
     {
-        return ctype_alnum($data) ? $data : '';
+        return ctype_alnum($data) ? $data : array('error' => $message);
     }
 
     /**
-     * Validate a text field value.
-     *
-     * @param string $data       The data to validate.
-     * @param array  $attributes
-     *
-     * @return string
-     */
-    protected function validate_textfield($data, array $attributes = [])
-    {
-        return sanitize_text_field($data);
-    }
-
-    /**
-     * Encode a textarea value.
+     * Validate a value with alphanumeric with space characters.
      *
      * @param string $data
      * @param array  $attributes
      *
      * @return string
      */
-    protected function validate_textarea($data, array $attributes = [])
-    {
-        return esc_textarea($data);
+    protected function validate_alnumsp($data, array $attributes = [],$message = 'Field must be alphanumeric with space characters'){
+        return preg_match('/^[a-z0-9 ]+$/i', $data) ? $data : array('error' => $message);
     }
 
-    /**
-     * Encode a HTML value.
-     *
-     * @param string $data
-     * @param array  $attributes
-     *
-     * @return string
-     */
-    protected function validate_html($data, array $attributes = [])
-    {
-        return esc_html($data);
-    }
+//
 
     /**
      * Validate an email value.
@@ -265,7 +266,7 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_min($data, array $attributes = [])
+    protected function validate_min($data, array $attributes = [],$message = '')
     {
         // If no length defined, return empty string.
         // @TODO Log the lack of a length...
@@ -280,7 +281,7 @@ class ValidationBuilder implements IValidate
             return $data;
         }
 
-        return '';
+        return !empty($message) ? array('error' => $message ) : array('error'=> 'Required minimum '.$length.' characters');
     }
 
     /**
@@ -291,7 +292,7 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_max($data, array $attributes = [])
+    protected function validate_max($data, array $attributes = [], $message = '')
     {
         // If no length defined, return empty string.
         // @TODO Log the lack of a length...
@@ -306,7 +307,7 @@ class ValidationBuilder implements IValidate
             return $data;
         }
 
-        return '';
+        return !empty($message) ? array('error' => $message ) : array('error'=> 'Maximum '.$length.' characters allowed');;
     }
 
     /**
@@ -318,58 +319,12 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_bool($data, array $attributes = [])
+    protected function validate_bool($data, array $attributes = [],$message = 'Field must be boolean')
     {
-        return filter_var($data, FILTER_VALIDATE_BOOLEAN, ['flags' => FILTER_NULL_ON_FAILURE]) ? $data : '';
+        return filter_var($data, FILTER_VALIDATE_BOOLEAN, ['flags' => FILTER_NULL_ON_FAILURE]) ? $data : array('error' => $message );
     }
 
-    /**
-     * Strips Evil Scripts.
-     *
-     * @param string $data
-     * @param array  $attributes
-     *
-     * @return string
-     */
-    protected function validate_kses($data, array $attributes = [])
-    {
-        if (empty($attributes)) {
-            return '';
-        }
 
-        $allowedHtml = $this->ksesAllowedHtml($attributes);
-
-        return wp_kses($data, $allowedHtml);
-    }
-
-    /**
-     * Set the allowed HTML tags for kses validation.
-     *
-     * @param array $attributes
-     *
-     * @return array
-     */
-    protected function ksesAllowedHtml(array $attributes)
-    {
-        $params = [];
-
-        foreach ($attributes as $atts) {
-            $atts = explode('|', $atts);
-
-            // Set the HTML tag.
-            $key = array_shift($atts);
-            $params[$key] = [];
-
-            // Add tag attributes.
-            if (!empty($atts)) {
-                foreach ($atts as $attribute) {
-                    $params[$key][$attribute] = [];
-                }
-            }
-        }
-
-        return $params;
-    }
 
     /**
      * Validate an hexadecimal value.
@@ -379,9 +334,9 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_hex($data, array $attributes = [])
+    protected function validate_hex($data, array $attributes = [], $message = 'Field must be hexadecimal value')
     {
-        return ctype_xdigit($data) ? $data : '';
+        return ctype_xdigit($data) ? $data : array('error' => $message );
     }
 
     /**
@@ -392,9 +347,9 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_color($data, array $attributes = [])
+    protected function validate_color($data, array $attributes = [], $message = "Field must be color charactor")
     {
-        return preg_match('/#([a-f]|[A-F]|[0-9]){3}(([a-f]|[A-F]|[0-9]){3})?\b/', $data) ? $data : '';
+        return preg_match('/#([a-f]|[A-F]|[0-9]){3}(([a-f]|[A-F]|[0-9]){3})?\b/', $data) ? $data : array('error' => $message );
     }
 
     /**
@@ -405,11 +360,11 @@ class ValidationBuilder implements IValidate
      *
      * @return string
      */
-    protected function validate_file($data, array $attributes = [])
+    protected function validate_file($data, array $attributes = [], $message = 'File invalid')
     {
         $ext = pathinfo($data, PATHINFO_EXTENSION);
 
-        return (in_array($ext, $attributes)) ? $data : '';
+        return (in_array($ext, $attributes)) ? $data : array('error' => $message );
     }
 
     /**
@@ -420,16 +375,29 @@ class ValidationBuilder implements IValidate
      *
      * @return string|array
      */
-    protected function validate_required($data, array $attributes = [])
+    protected function validate_required($data, array $attributes = [],$message = 'Field required')
     {
+        $error_array = array('error' => $message);
         if (is_null($data)) {
-            return '';
+            return $error_array;
         } elseif (is_string($data) && trim($data) === '') {
-            return '';
+            return $error_array;
         } elseif ((is_array($data) || $data instanceof Countable) && count($data) < 1) {
-            return [];
+            return $error_array;
         }
 
         return $data;
+    }
+
+    /**
+     * Validate a value with alphanumeric with space,hyphen characters and encoding.
+     *
+     * @param $data
+     * @param array $attributes
+     * @param string $message
+     * @return array
+     */
+    protected function validate_alnumshe($data, array $attributes = [],$message = 'Field must be alphanumeric with space characters'){
+        return preg_match('/^[a-zA-Z0-9À-ž -]+$/i', $data) ? $data : array('error' => $message);
     }
 }
