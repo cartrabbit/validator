@@ -400,4 +400,9 @@ class ValidationBuilder implements IValidate
     protected function validate_alnumshe($data, array $attributes = [],$message = 'Field must be alphanumeric with space characters'){
         return preg_match('/^[a-zA-Z0-9À-ž -]+$/i', $data) ? $data : array('error' => $message);
     }
+
+
+    protected function validate_string($data, array $attributes = [],$message = 'Field must be string'){
+        return filter_var($data, FILTER_SANITIZE_STRING);
+    }
 }
