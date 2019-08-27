@@ -1,13 +1,12 @@
 <?php
 
 namespace Cartrabbit\Validator;
-
 interface IValidate
 {
     /**
      * Runs a validation rule on a single passed data.
      *
-     * @param mixed $data  The given data: string, int, array, bool...
+     * @param mixed $data The given data: string, int, array, bool...
      * @param array $rules The rules to use for validation.
      *
      * @return mixed
@@ -17,7 +16,7 @@ interface IValidate
     /**
      * Validate multiple inputs.
      *
-     * @param array $data  The inputs to validate.
+     * @param array $data The inputs to validate.
      * @param array $rules The rules in order to validate.
      *
      * @return array
